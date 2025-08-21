@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analiză Cognitivă</title>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap');
+
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-color: #f5f8ff;
+            color: #1e3a8a;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 900px;
+            background: #fff;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+            text-align: center;
+            animation: fadeIn 1s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h1 {
+            color: #1e3a8a;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        p {
+            color: #64748b;
+            font-size: 1.1em;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background-color: #e9f0fe;
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 25px;
+            border: 2px solid #a8c1ff;
+            transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+            cursor: pointer;
+        }
+
+        .card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .card h2 {
+            margin-top: 0;
+            color: #1e3a8a;
+        }
+
+        button {
+            background-color: #26a69a;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: 600;
+            transition: background-color 0.3s ease, transform 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #00796b;
+            transform: scale(1.05);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 100;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.6);
+            backdrop-filter: blur(5px);
+            padding-top: 60px;
+        }
+
+        .modal-content {
+            background-color: #fff;
+            margin: 5% auto;
+            padding: 30px;
+            border-radius: 15px;
+            width: 80%;
+            max-width: 600px;
+            text-align: left;
+            position: relative;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            animation: slideIn 0.5s ease-out;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .close-btn {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .close-btn:hover, .close-btn:focus {
+            color: #1e3a8a;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        #results {
+            background-color: #fff3e0;
+            border: 2px solid #ffcc80;
+            padding: 30px;
+            border-radius: 15px;
+            margin-top: 30px;
+            display: none;
+            text-align: left;
+        }
+
+        .quiz-option {
+            background-color: #e3f2fd;
+            border: 1px solid #90caf9;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .quiz-option:hover {
+            background-color: #bbdefb;
+        }
+        .quiz-option.selected {
+            background-color: #64b5f6;
+            color: white;
+            border-color: #1565c0;
+        }
+
+        /* Modificări pentru a aranja pătrățelele pe orizontală */
+        #visual-game-area {
+            display: flex;
+            flex-wrap: wrap; /* Permite trecerea pe rândul următor dacă e cazul */
+            justify-content: center;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .game-tile {
+            width: 80px;
+            height: 80px;
+            background-color: #a8c1ff;
+            border-radius: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2em;
+            color: white;
+            cursor: pointer;
+            transition: transform 0.3s, background-color 0.3s;
+        }
+        .game-tile.correct { background-color: #4caf50; }
+        .game-tile.incorrect { background-color: #f44336; }
+
+        #speed-game-button {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            font-size: 1.5em;
+            margin: auto;
+            display: block;
+        }
+        #speed-game-button.active {
+            background-color: #f44336;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Testează-te acum! 🚀</h1>
+        <p>Află mai multe despre sănătatea ta cognitivă printr-o serie de teste interactive.</p>
+
+        <div class="card" onclick="openModal('quiz-modal')">
+            <h2>🧠 Test Cognitiv</h2>
+            <p>Evaluează-ți raționamentul, memoria și abilitățile de calcul.</p>
+        </div>
+
+        <div class="card" onclick="openModal('visual-game-modal')">
+            <h2>🧩 Joc de Memorie Vizuală</h2>
+            <p>Antrenează-ți memoria pe termen scurt cu un mini-joc captivant.</p>
+        </div>
+        
+        <div class="card" onclick="openModal('speed-game-modal')">
+            <h2>⏱️ Test de Viteză</h2>
+            <p>Măsoară-ți timpul de reacție și atenția la detalii.</p>
+        </div>
+
+        <div class="card" onclick="openModal('mri-modal')">
+            <h2>📷 Analiză RMN</h2>
+            <p>Încarcă o imagine RMN pentru o analiză detaliată bazată pe AI.</p>
+        </div>
+
+        <div id="results">
+            <h2>Rezultatele Tale</h2>
+            <p><strong>⚠️ Atenție:</strong> Acesta nu este un diagnostic medical. Pentru un verdict final, consultă un medic specialist!</p>
+            <pre id="results-data"></pre>
+        </div>
+    </div>
+
+    <div id="quiz-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal('quiz-modal')">&times;</span>
+            <h2>Test de memorie și calcul</h2>
+            <div id="quiz-questions"></div>
+            <button onclick="submitQuiz()">Finalizează testul</button>
+        </div>
+    </div>
+
+    <div id="visual-game-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal('visual-game-modal')">&times;</span>
+            <h2>Joc de Memorie Vizuală</h2>
+            <p id="visual-game-instructions">Memorează poziția patratelor albastre, apoi apasă-le în aceeași ordine. Nivel: <span id="visual-level">1</span></p>
+            <div id="visual-game-area"></div>
+            <p id="visual-game-status"></p>
+        </div>
+    </div>
+    
+    <div id="speed-game-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal('speed-game-modal')">&times;</span>
+            <h2>Test de viteză</h2>
+            <p>Apasă butonul când devine roșu! Apasă pe el pentru a începe.</p>
+            <button id="speed-game-button">Start</button>
+            <p id="speed-result">Timp de reacție: 0 ms</p>
+        </div>
+    </div>
+
+    <div id="mri-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal('mri-modal')">&times;</span>
+            <h2>Analiză RMN</h2>
+            <p>Încarcă o imagine RMN a creierului. Format acceptat: .png, .jpg.</p>
+            <input type="file" id="mri-upload" accept="image/*">
+            <button onclick="uploadMRI()">Încarcă și Analizează</button>
+        </div>
+    </div>
+
+    <script>
+        // Modal functions
+        function openModal(modalId) {
+            document.getElementById(modalId).style.display = 'block';
+            if (modalId === 'visual-game-modal') {
+                startGame();
+            } else if (modalId === 'speed-game-modal') {
+                initSpeedGame();
+            }
+        }
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        // Quiz Logic
+        const quizQuestions = [
+            {
+                question: "1. Ce zi a săptămânii este astăzi?",
+                answers: ["Luni", "Marți", "Miercuri", "Joi"], 
+                correct: "Joi"
+            },
+            {
+                question: "2. Dacă ai 100 de lei și cheltui 25, cât îți mai rămâne?",
+                answers: ["50", "75", "25", "100"],
+                correct: "75"
+            },
+            {
+                question: "3. Îți amintești ce ai mâncat ieri la cină?",
+                answers: ["Da", "Nu"],
+                correct: "Da"
+            }
+        ];
+        let quizScore = 0;
+        let selectedAnswers = {};
+
+        function loadQuiz() {
+            const quizDiv = document.getElementById('quiz-questions');
+            quizDiv.innerHTML = '';
+            quizQuestions.forEach((q, index) => {
+                const questionDiv = document.createElement('div');
+                questionDiv.innerHTML = `<p>${q.question}</p>`;
+                q.answers.forEach(answer => {
+                    const optionDiv = document.createElement('div');
+                    optionDiv.classList.add('quiz-option');
+                    optionDiv.textContent = answer;
+                    optionDiv.addEventListener('click', () => {
+                        selectedAnswers[index] = answer;
+                        document.querySelectorAll(`#quiz-questions div[data-question-id="${index}"] .quiz-option`).forEach(opt => opt.classList.remove('selected'));
+                        optionDiv.classList.add('selected');
+                    });
+                    questionDiv.dataset.questionId = index;
+                    quizDiv.appendChild(optionDiv);
+                });
+                quizDiv.appendChild(questionDiv);
+            });
+        }
+        function submitQuiz() {
+            quizScore = 0;
+            quizQuestions.forEach((q, index) => {
+                if (selectedAnswers[index] === q.correct) {
+                    quizScore++;
+                }
+            });
+            alert(`Ai obținut ${quizScore} puncte din ${quizQuestions.length} la quiz!`);
+            closeModal('quiz-modal');
+        }
+        document.addEventListener('DOMContentLoaded', loadQuiz);
+
+        // Visual Memory Game Logic
+        const visualGameArea = document.getElementById('visual-game-area');
+        let visualLevel = 1;
+        let sequence = [];
+        let playerSequence = [];
+        let canClick = false;
+
+        function startGame() {
+            visualGameArea.innerHTML = '';
+            // Creăm un rând de pătrățele, dar cu un număr variabil
+            const numTiles = 5 + visualLevel;
+            for (let i = 0; i < numTiles; i++) {
+                const tile = document.createElement('div');
+                tile.classList.add('game-tile');
+                tile.dataset.id = i;
+                tile.addEventListener('click', () => handleVisualClick(tile));
+                visualGameArea.appendChild(tile);
+            }
+            nextVisualLevel();
+        }
+
+        function nextVisualLevel() {
+            playerSequence = [];
+            document.getElementById('visual-level').textContent = visualLevel;
+            sequence = [];
+            const tiles = Array.from({length: 5 + visualLevel}, (_, i) => i);
+            for (let i = 0; i < visualLevel + 2; i++) {
+                const randomIndex = Math.floor(Math.random() * tiles.length);
+                sequence.push(tiles[randomIndex]);
+                tiles.splice(randomIndex, 1);
+            }
+            
+            canClick = false;
+            setTimeout(() => showVisualSequence(), 1000);
+        }
+
+        function showVisualSequence() {
+            let i = 0;
+            const interval = setInterval(() => {
+                const tile = document.querySelector(`[data-id="${sequence[i]}"]`);
+                if(tile) {
+                    tile.style.backgroundColor = '#26a69a';
+                    setTimeout(() => tile.style.backgroundColor = '', 500);
+                }
+                i++;
+                if (i >= sequence.length) {
+                    clearInterval(interval);
+                    canClick = true;
+                }
+            }, 1000);
+        }
+        
+        function handleVisualClick(tile) {
+            if (!canClick) return;
+            const id = parseInt(tile.dataset.id);
+            playerSequence.push(id);
+
+            const correct = sequence[playerSequence.length - 1] === id;
+            if (correct) {
+                tile.style.backgroundColor = '#4caf50';
+            } else {
+                tile.style.backgroundColor = '#f44336';
+                alert('Joc terminat. Ai greșit secvența!');
+                visualLevel = 1;
+                startGame();
+                return;
+            }
+
+            if (playerSequence.length === sequence.length) {
+                alert('Felicitări! Nivel complet!');
+                visualLevel++;
+                nextVisualLevel();
+            }
+        }
+        
+        // Speed Test Game Logic
+        const speedButton = document.getElementById('speed-game-button');
+        const speedResult = document.getElementById('speed-result');
+        let startTime, timeout;
+
+        function initSpeedGame() {
+            speedButton.textContent = 'Apasă pentru a începe';
+            speedButton.classList.remove('active');
+            speedButton.onclick = startSpeedTest;
+        }
+
+        function startSpeedTest() {
+            speedButton.textContent = 'Așteaptă...';
+            speedButton.disabled = true;
+            speedButton.onclick = null;
+            
+            const delay = Math.random() * 3000 + 1000;
+            timeout = setTimeout(() => {
+                speedButton.textContent = 'APASĂ ACUM!';
+                speedButton.classList.add('active');
+                startTime = Date.now();
+                speedButton.disabled = false;
+                speedButton.onclick = endSpeedTest;
+            }, delay);
+        }
+
+        function endSpeedTest() {
+            if (!speedButton.classList.contains('active')) {
+                clearTimeout(timeout);
+                alert('Ai apăsat prea repede!');
+                initSpeedGame();
+                return;
+            }
+            const reactionTime = Date.now() - startTime;
+            speedResult.textContent = `Timp de reacție: ${reactionTime} ms`;
+            alert(`Timp de reacție: ${reactionTime} ms`);
+            initSpeedGame();
+        }
+
+        // RMN Upload function
+        async function uploadMRI() {
+            const fileInput = document.getElementById('mri-upload');
+            const file = fileInput.files[0];
+            if (!file) {
+                alert('Te rog, încarcă o imagine.');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('mri_image', file);
+            
+            try {
+                // Aici vei apela funcția ta de backend Flask
+                // const response = await fetch('http://127.0.0.1:5000/api/analyze', {
+                //     method: 'POST',
+                //     body: formData
+                // });
+                // const data = await response.json();
+
+                // Simulăm un răspuns de la backend pentru demonstrație
+                const data = {
+                    "risc": "Scăzut",
+                    "detalii": "Rezultatele testelor sugerează o bună sănătate cognitivă. Cu toate acestea, este esențial să discuți aceste rezultate cu un medic neurolog."
+                };
+
+                const resultsDiv = document.getElementById('results');
+                const resultsDataPre = document.getElementById('results-data');
+                
+                resultsDataPre.textContent = JSON.stringify(data, null, 2);
+                resultsDiv.style.display = 'block';
+                closeModal('mri-modal');
+                alert('Analiza a fost finalizată!');
+
+            } catch (error) {
+                console.error('Eroare:', error);
+                alert('A apărut o eroare. Încearcă din nou.');
+            }
+        }
+    </script>
+</body>
+</html>
