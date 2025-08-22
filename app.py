@@ -4,6 +4,16 @@ from flask_login import LoginManager, UserMixin, login_user, login_required, log
 import sqlite3
 import os
 from werkzeug.security import generate_password_hash, check_password_hash
+import spacy
+from collections import Counter
+
+# Load the English spacy model once
+try:
+    nlp = spacy.load("en_core_web_sm")
+except OSError:
+    print("Download the 'en_core_web_sm' model first by running:")
+    print("python -m spacy download en_core_web_sm")
+    nlp = None
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your_super_secret_key'  # REQUIRED for Flask-Login
@@ -44,12 +54,13 @@ def init_db():
     try:
         conn = sqlite3.connect(DATABASE)
         cursor = conn.cursor()
-        # Create users table
+        # Create users table with new email column
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS users (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 username TEXT UNIQUE NOT NULL,
-                password TEXT NOT NULL
+                password TEXT NOT NULL,
+                email TEXT UNIQUE NOT NULL
             )
         ''')
         # Create results table with user_id foreign key
@@ -66,7 +77,7 @@ def init_db():
         ''')
         conn.commit()
     except sqlite3.Error as e:
-        print(f"Eroare la crearea bazei de date: {e}")
+        print(f"Error creating the database: {e}")
     finally:
         if conn:
             conn.close()
@@ -105,19 +116,23 @@ def register():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
+        email = request.form['email']
+
+        if len(password) < 8:
+            flash('Password must be at least 8 characters long.', 'danger')
+            return redirect(url_for('register'))
 
         conn = sqlite3.connect(DATABASE)
         cursor = conn.cursor()
 
         try:
-            # Hash the password before saving
             hashed_password = generate_password_hash(password, method='scrypt')
-            cursor.execute("INSERT INTO users (username, password) VALUES (?, ?)", (username, hashed_password))
+            cursor.execute("INSERT INTO users (username, password, email) VALUES (?, ?, ?)", (username, hashed_password, email))
             conn.commit()
             flash('Registration successful. Please log in.', 'success')
             return redirect(url_for('login'))
         except sqlite3.IntegrityError:
-            flash('Username already exists.', 'danger')
+            flash('Username or email already exists.', 'danger')
         finally:
             conn.close()
 
@@ -129,8 +144,6 @@ def logout():
     logout_user()
     return redirect(url_for('index'))
 
-# --- Existing Endpoints ---
-
 @app.route('/api/analyze_all', methods=['POST'])
 @login_required
 def analyze_all():
@@ -138,9 +151,8 @@ def analyze_all():
     quiz_score = data.get('quiz_data', {}).get('correct_answers')
     visual_level = data.get('visual_game_data', {}).get('correct_sequence')
     reaction_time = data.get('speed_game_data', {}).get('reaction_time')
-    user_id = current_user.id # Get the current user's ID
+    user_id = current_user.id
 
-    # Save data to database
     try:
         conn = sqlite3.connect(DATABASE)
         cursor = conn.cursor()
@@ -149,16 +161,15 @@ def analyze_all():
         conn.commit()
         conn.close()
     except sqlite3.Error as e:
-        print(f"Eroare la salvarea in baza de date: {e}")
+        print(f"Error saving to database: {e}")
         return jsonify({"error": "Failed to save results"}), 500
 
-    # Your existing analysis logic...
     overall_assessment = "Your overall assessment here."
     response = {
         "overall_assessment": overall_assessment,
-        "quiz_result": f"Scor la quiz: {quiz_score} din 3.",
-        "visual_memory_result": f"Nivel de memorie vizuala atins: {visual_level}.",
-        "reaction_time_result": f"Timp de reactie: {reaction_time} ms."
+        "quiz_result": f"Quiz Score: {quiz_score} out of 3.",
+        "visual_memory_result": f"Visual memory level reached: {visual_level}.",
+        "reaction_time_result": f"Reaction time: {reaction_time} ms."
     }
     
     return jsonify(response)
@@ -166,12 +177,31 @@ def analyze_all():
 @app.route('/api/results', methods=['GET'])
 @login_required
 def get_results():
-    user_id = current_user.id # Get the current user's ID
+    user_id = current_user.id
     conn = sqlite3.connect(DATABASE)
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
-    # Fetch only the current user's results
     cursor.execute("SELECT * FROM results WHERE user_id = ? ORDER BY timestamp DESC", (user_id,))
+    results = cursor.fetchall()
+    conn.close()
+
+    results_list = [dict(row) for row in results]
+    
+    return jsonify(results_list)
+
+@app.route('/api/my_results', methods=['GET'])
+@login_required
+def get_my_results():
+    """
+    Fetches all quiz and test results for the currently logged-in user.
+    """
+    user_id = current_user.id
+    conn = sqlite3.connect(DATABASE)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    
+    # Fetch all results for the current user, ordered by timestamp for plotting
+    cursor.execute("SELECT quiz_score, reaction_time, timestamp FROM results WHERE user_id = ? ORDER BY timestamp ASC", (user_id,))
     results = cursor.fetchall()
     conn.close()
 
@@ -182,8 +212,28 @@ def get_results():
 @app.route('/api/analyze_mri', methods=['POST'])
 @login_required
 def analyze_mri():
-    # Placeholder for MRI analysis
-    return jsonify({"mri_analysis": "Nu au fost detectate anomalii majore."})
+    return jsonify({"mri_analysis": "No major anomalies detected."})
+
+
+@app.route('/api/analyze_speech', methods=['POST'])
+@login_required
+def analyze_speech():
+    if not nlp:
+        return jsonify({"error": "Spacy model not loaded."}), 500
+    
+    data = request.json
+    text = data.get('text', '')
+
+    if not text:
+        return jsonify({"error": "No text provided for analysis."}), 400
+
+    doc = nlp(text.lower())
+    
+    # Simple NLP analysis: count unique words
+    words = [token.text for token in doc if token.is_alpha and not token.is_stop]
+    unique_words = len(set(words))
+    
+    return jsonify({"unique_words": unique_words, "original_text": text})
 
 
 if __name__ == '__main__':

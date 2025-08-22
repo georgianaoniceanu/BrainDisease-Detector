@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="ro">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Analiza Cognitiva</title>
+    <title>Cognitive Analysis</title>
     
     <style>
         /* Your existing CSS */
@@ -219,56 +219,79 @@
             margin-bottom: 10px;
             list-style-type: none;
         }
+
+        .dashboard-container {
+            margin-top: 40px;
+            padding: 20px;
+            background: #fff;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            text-align: left;
+        }
+
+        #my-dashboard {
+            display: none; /* Initially hide the dashboard */
+        }
     </style>
 </head>
 <body>
     {% if current_user.is_authenticated %}
-    <div class="container">
+    <div class="container" id="tests-container">
         <div style="text-align: right; margin-bottom: 20px;">
             <p>Hello, {{ current_user.username }}! <a href="{{ url_for('logout') }}">Log out</a></p>
         </div>
-        <h1>Testeaza-te acum!</h1>
-        <p>Afla mai multe despre sanatatea ta cognitiva printr-o serie de teste interactive.</p>
+        <h1>Test yourself now!</h1>
+        <p>Find out more about your cognitive health through a series of interactive tests.</p>
 
         <div class="card" onclick="openModal('quiz-modal')">
-            <h2>🧠 Test Cognitiv</h2>
-            <p>Evalueaza-ti rationamentul, memoria si abilitatile de calcul.</p>
+            <h2>🧠 Cognitive Test</h2>
+            <p>Evaluate your reasoning, memory, and calculation skills.</p>
         </div>
 
         <div class="card" onclick="openModal('visual-game-modal')">
-            <h2>🧩 Joc de Memorie Vizuala</h2>
-            <p>Antreneaza-ti memoria pe termen scurt cu un mini-joc captivant.</p>
+            <h2>🧩 Visual Memory Game</h2>
+            <p>Train your short-term memory with a captivating mini-game.</p>
         </div>
         
         <div class="card" onclick="openModal('speed-game-modal')">
-            <h2>⏱️ Test de Viteza</h2>
-            <p>Masura-ti timpul de reactie si atentia la detalii.</p>
+            <h2>⏱️ Speed Test</h2>
+            <p>Measure your reaction time and attention to detail.</p>
         </div>
 
         <div class="card" onclick="openModal('mri-modal')">
-            <h2>📷 Analiza RMN</h2>
-            <p>Incarca o imagine RMN pentru o analiza detaliata bazata pe AI.</p>
+            <h2>📷 MRI Analysis</h2>
+            <p>Upload an MRI image for a detailed AI-based analysis.</p>
         </div>
 
-        <button id="complete-analysis-btn" disabled>Vezi rezultatele complete</button>
-        <button id="view-all-results-btn">Vezi toate rezultatele salvate</button>
+        <button id="complete-analysis-btn" disabled>View complete results</button>
+        <button id="view-all-results-btn">View all saved results</button>
+        <button id="view-dashboard-btn">My Dashboard</button>
 
         <div id="results">
-            <h2>Rezultatele Tale</h2>
-            <p>⚠️ Atentie: Acesta nu este un diagnostic medical. Pentru un verdict final, consulta un medic specialist!</p>
+            <h2>Your Results</h2>
+            <p>⚠️ Warning: This is not a medical diagnosis. For a final verdict, consult a specialist!</p>
             <pre id="results-data"></pre>
         </div>
 
         <div id="all-results-container">
-            <h3>Toate testele finalizate</h3>
+            <h3>All completed tests</h3>
             <ul id="results-list">
                 </ul>
         </div>
+
     </div>
+    <section id="my-dashboard" class="dashboard-container">
+        <h2>My Performance Dashboard 📈</h2>
+        <p>Track your cognitive performance over time.</p>
+        <button onclick="showTests()">Back to Tests</button>
+        <div style="height: 400px; width: 100%;">
+            <canvas id="performanceChart"></canvas>
+        </div>
+    </section>
     {% else %}
     <div class="container">
-        <h1>Bine ai venit!</h1>
-        <p>Te rog să te autentifici pentru a începe testele cognitive.</p>
+        <h1>Welcome!</h1>
+        <p>Please log in to start the cognitive tests.</p>
         <a href="{{ url_for('login') }}" class="button">Log In</a>
         <a href="{{ url_for('register') }}" class="button">Register</a>
     </div>
@@ -277,17 +300,17 @@
     <div id="quiz-modal" class="modal">
         <div class="modal-content">
             <span class="close-btn" onclick="closeModal('quiz-modal')">&times;</span>
-            <h2>Test de memorie si calcul</h2>
+            <h2>Memory and Calculation Test</h2>
             <div id="quiz-questions"></div>
-            <button onclick="submitQuiz()">Finalizeaza testul</button>
+            <button onclick="submitQuiz()">Finalize Test</button>
         </div>
     </div>
 
     <div id="visual-game-modal" class="modal">
         <div class="modal-content">
             <span class="close-btn" onclick="closeModal('visual-game-modal')">&times;</span>
-            <h2>Joc de Memorie Vizuala</h2>
-            <p id="visual-game-instructions">Memoreaza pozitia patratelor albastre, apoi apasa-le in aceeasi ordine. Nivel: <span id="visual-level">1</span></p>
+            <h2>Visual Memory Game</h2>
+            <p id="visual-game-instructions">Memorize the position of the blue squares, then press them in the same order. Level: <span id="visual-level">1</span></p>
             <div id="visual-game-area"></div>
             <p id="visual-game-status"></p>
         </div>
@@ -296,22 +319,25 @@
     <div id="speed-game-modal" class="modal">
         <div class="modal-content">
             <span class="close-btn" onclick="closeModal('speed-game-modal')">&times;</span>
-            <h2>Test de viteza</h2>
-            <p>Apasa butonul cand devine rosu! Apasa pe el pentru a incepe.</p>
+            <h2>Speed Test</h2>
+            <p>Press the button when it turns red! Press on it to start.</p>
             <button id="speed-game-button">Start</button>
-            <p id="speed-result">Timp de reactie: 0 ms</p>
+            <p id="speed-result">Reaction time: 0 ms</p>
         </div>
     </div>
 
     <div id="mri-modal" class="modal">
         <div class="modal-content">
             <span class="close-btn" onclick="closeModal('mri-modal')">&times;</span>
-            <h2>Analiza RMN</h2>
-            <p>Incarca o imagine RMN a creierului. Format acceptat: .png, .jpg.</p>
+            <h2>MRI Analysis</h2>
+            <p>Upload a brain MRI image. Accepted format: .png, .jpg.</p>
             <input type="file" id="mri-upload" accept="image/*">
-            <button onclick="uploadMRI()">Incarca si Analizeaza</button>
+            <button onclick="uploadMRI()">Upload and Analyze</button>
         </div>
     </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
 
     <script>
         // Your existing JavaScript code...
@@ -324,6 +350,7 @@
             speed: false,
             mri: false
         };
+        let myPerformanceChart; // Declare the chart variable globally
 
         function checkAllTestsCompleted() {
             const allCompleted = Object.values(testsCompleted).every(status => status === true);
@@ -348,9 +375,9 @@
         }
 
         const quizQuestions = [
-            { question: "1. Cate zile are o saptamana?", answers: ["5", "7", "10", "12"], correct: "7" },
-            { question: "2. Care este capitala Frantei?", answers: ["Londra", "Roma", "Paris", "Berlin"], correct: "Paris" },
-            { question: "3. Iti amintesti ce ai mancat la micul dejun?", answers: ["Da", "Nu"], correct: "Da" }
+            { question: "1. How many days are in a week?", answers: ["5", "7", "10", "12"], correct: "7" },
+            { question: "2. What is the capital of France?", answers: ["London", "Rome", "Paris", "Berlin"], correct: "Paris" },
+            { question: "3. Do you remember what you had for breakfast?", answers: ["Yes", "No"], correct: "Yes" }
         ];
         let selectedAnswers = {};
 
@@ -385,7 +412,7 @@
                     quizScore++;
                 }
             });
-            alert(`Ai obtinut ${quizScore} raspunsuri corecte din ${quizQuestions.length} la quiz!`);
+            alert(`You got ${quizScore} correct answers out of ${quizQuestions.length} on the quiz!`);
             testsCompleted.quiz = true;
             closeModal('quiz-modal');
             checkAllTestsCompleted();
@@ -450,7 +477,7 @@
                 tile.style.backgroundColor = '#4caf50';
             } else {
                 tile.style.backgroundColor = '#f44336';
-                alert(`Joc terminat. Ai gresit secventa! Ai atins nivelul ${visualLevel - 1}.`);
+                alert(`Game over. You got the sequence wrong! You reached level ${visualLevel - 1}.`);
                 closeModal('visual-game-modal');
                 testsCompleted.visual = true;
                 checkAllTestsCompleted();
@@ -458,7 +485,7 @@
             }
 
             if (playerSequence.length === sequence.length) {
-                alert('Felicitari! Nivel complet!');
+                alert('Congratulations! Level complete!');
                 visualLevel++;
                 nextVisualLevel();
             }
@@ -473,19 +500,19 @@
         let startTime, timeout;
 
         function initSpeedGame() {
-            speedButton.textContent = 'Apasa pentru a incepe';
+            speedButton.textContent = 'Press to start';
             speedButton.classList.remove('active');
             speedButton.onclick = startSpeedTest;
         }
 
         function startSpeedTest() {
-            speedButton.textContent = 'Asteapta...';
+            speedButton.textContent = 'Wait...';
             speedButton.disabled = true;
             speedButton.onclick = null;
             
             const delay = Math.random() * 3000 + 1000;
             timeout = setTimeout(() => {
-                speedButton.textContent = 'APASA ACUM!';
+                speedButton.textContent = 'PRESS NOW!';
                 speedButton.classList.add('active');
                 startTime = Date.now();
                 speedButton.disabled = false;
@@ -496,13 +523,13 @@
         function endSpeedTest() {
             if (!speedButton.classList.contains('active')) {
                 clearTimeout(timeout);
-                alert('Ai apasat prea repede!');
+                alert('You pressed too fast!');
                 initSpeedGame();
                 return;
             }
             reactionTime = Date.now() - startTime;
-            speedResult.textContent = `Timp de reactie: ${reactionTime} ms`;
-            alert(`Timp de reactie: ${reactionTime} ms`);
+            speedResult.textContent = `Reaction time: ${reactionTime} ms`;
+            alert(`Reaction time: ${reactionTime} ms`);
             testsCompleted.speed = true;
             closeModal('speed-game-modal');
             checkAllTestsCompleted();
@@ -519,7 +546,7 @@
             const resultsDataPre = document.getElementById('results-data');
             
             try {
-                resultsDataPre.textContent = 'Analizam rezultatele. Te rog, asteapta...';
+                resultsDataPre.textContent = 'Analyzing results. Please wait...';
                 resultsDiv.style.display = 'block';
 
                 const response = await fetch('{{ url_for("analyze_all") }}', {
@@ -534,8 +561,8 @@
                 const result = await response.json();
                 resultsDataPre.textContent = JSON.stringify(result, null, 2);
             } catch (error) {
-                console.error('Eroare:', error);
-                resultsDataPre.textContent = `A aparut o eroare la comunicarea cu serverul: ${error.message}`;
+                console.error('Error:', error);
+                resultsDataPre.textContent = `An error occurred while communicating with the server: ${error.message}`;
             }
         }
 
@@ -543,7 +570,7 @@
             const fileInput = document.getElementById('mri-upload');
             const file = fileInput.files[0];
             if (!file) {
-                alert('Te rog, incarca o imagine.');
+                alert('Please upload an image.');
                 return;
             }
             const formData = new FormData();
@@ -560,19 +587,19 @@
                 }
                 
                 const data = await response.json();
-                alert(`Analiza RMN finalizata: ${data.mri_analysis}`);
+                alert(`MRI analysis finalized: ${data.mri_analysis}`);
                 testsCompleted.mri = true;
                 closeModal('mri-modal');
                 checkAllTestsCompleted();
             } catch (error) {
-                console.error('Eroare:', error);
-                alert('A aparut o eroare la analiza RMN. Incearca din nou.');
+                console.error('Error:', error);
+                alert('An error occurred during MRI analysis. Please try again.');
             }
         }
         
         async function fetchAndDisplayAllResults() {
             const resultsList = document.getElementById('results-list');
-            resultsList.innerHTML = '<li>Se incarca rezultatele...</li>';
+            resultsList.innerHTML = '<li>Loading results...</li>';
             
             try {
                 const response = await fetch('{{ url_for("get_results") }}');
@@ -583,32 +610,155 @@
                 
                 resultsList.innerHTML = '';
                 if (data.length === 0) {
-                    resultsList.innerHTML = '<li>Nu exista rezultate salvate inca.</li>';
+                    resultsList.innerHTML = '<li>No results saved yet.</li>';
                     return;
                 }
 
                 data.forEach(result => {
                     const li = document.createElement('li');
                     li.innerHTML = `
-                        <p><strong>Data:</strong> ${new Date(result.timestamp).toLocaleString()}</p>
-                        <p><strong>Scor Quiz:</strong> ${result.quiz_score}</p>
-                        <p><strong>Nivel Memorie Vizuala:</strong> ${result.visual_level}</p>
-                        <p><strong>Timp de Reactie:</strong> ${result.reaction_time} ms</p>
+                        <p><strong>Date:</strong> ${new Date(result.timestamp).toLocaleString()}</p>
+                        <p><strong>Quiz Score:</strong> ${result.quiz_score}</p>
+                        <p><strong>Visual Memory Level:</strong> ${result.visual_level}</p>
+                        <p><strong>Reaction Time:</strong> ${result.reaction_time} ms</p>
                     `;
                     resultsList.appendChild(li);
                 });
 
+                document.getElementById('results').style.display = 'none';
+                document.getElementById('all-results-container').style.display = 'block';
+
             } catch (error) {
-                console.error('Eroare la preluarea rezultatelor:', error);
-                resultsList.innerHTML = `<li>A aparut o eroare la preluarea datelor: ${error.message}</li>`;
+                console.error('Error fetching results:', error);
+                resultsList.innerHTML = `<li>An error occurred while fetching data: ${error.message}</li>`;
             }
         }
+
+        function showTests() {
+            document.getElementById('tests-container').style.display = 'block';
+            document.getElementById('results').style.display = 'none';
+            document.getElementById('all-results-container').style.display = 'none';
+            document.getElementById('my-dashboard').style.display = 'none';
+        }
+
+        async function fetchAndRenderDashboard() {
+            const myDashboardSection = document.getElementById('my-dashboard');
+            const testsContainer = document.getElementById('tests-container');
+            const resultsContainer = document.getElementById('all-results-container');
+            
+            try {
+                const response = await fetch('/api/my_results');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                
+                if (data.length === 0) {
+                    myDashboardSection.innerHTML = '<h2>My Performance Dashboard</h2><p>Complete a test to see your results here.</p><button onclick="showTests()">Back to Tests</button>';
+                    myDashboardSection.style.display = 'block';
+                    testsContainer.style.display = 'none';
+                    resultsContainer.style.display = 'none';
+                    return;
+                }
+
+                // Prepare data for Chart.js
+                const timestamps = data.map(result => new Date(result.timestamp));
+                const quizScores = data.map(result => result.quiz_score);
+                const reactionTimes = data.map(result => result.reaction_time);
+
+                const ctx = document.getElementById('performanceChart').getContext('2d');
+                
+                // Destroy old chart instance if it exists to avoid rendering issues
+                if (window.myPerformanceChart) {
+                    window.myPerformanceChart.destroy();
+                }
+
+                window.myPerformanceChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: timestamps,
+                        datasets: [
+                            {
+                                label: 'Quiz Score',
+                                data: quizScores,
+                                borderColor: 'rgb(75, 192, 192)',
+                                tension: 0.1,
+                                yAxisID: 'y',
+                            },
+                            {
+                                label: 'Reaction Time (ms)',
+                                data: reactionTimes,
+                                borderColor: 'rgb(255, 99, 132)',
+                                tension: 0.1,
+                                yAxisID: 'y1',
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            x: {
+                                type: 'time',
+                                time: {
+                                    unit: 'day'
+                                },
+                                title: {
+                                    display: true,
+                                    text: 'Date'
+                                }
+                            },
+                            y: {
+                                type: 'linear',
+                                display: true,
+                                position: 'left',
+                                title: {
+                                    display: true,
+                                    text: 'Quiz Score'
+                                },
+                                beginAtZero: true,
+                                suggestedMax: 10,
+                            },
+                            y1: {
+                                type: 'linear',
+                                display: true,
+                                position: 'right',
+                                title: {
+                                    display: true,
+                                    text: 'Reaction Time (ms)'
+                                },
+                                grid: {
+                                    drawOnChartArea: false, // only want the grid lines for one axis to show
+                                },
+                                reverse: true, // Lower reaction time is better
+                                beginAtZero: true,
+                            }
+                        }
+                    }
+                });
+
+                // Show the dashboard and hide other sections
+                document.getElementById('tests-container').style.display = 'none';
+                document.getElementById('results').style.display = 'none';
+                document.getElementById('all-results-container').style.display = 'none';
+                myDashboardSection.style.display = 'block';
+
+            } catch (error) {
+                console.error('Error fetching dashboard data:', error);
+                myDashboardSection.innerHTML = `<h2>Dashboard Error</h2><p>An error occurred: ${error.message}</p><button onclick="showTests()">Back to Tests</button>`;
+                myDashboardSection.style.display = 'block';
+                testsContainer.style.display = 'none';
+                resultsContainer.style.display = 'none';
+            }
+        }
+
 
         document.addEventListener('DOMContentLoaded', () => {
             loadQuiz();
             checkAllTestsCompleted();
             document.getElementById('complete-analysis-btn').addEventListener('click', sendAllDataToBackend);
             document.getElementById('view-all-results-btn').addEventListener('click', fetchAndDisplayAllResults);
+            document.getElementById('view-dashboard-btn').addEventListener('click', fetchAndRenderDashboard);
         });
     </script>
 </body>
